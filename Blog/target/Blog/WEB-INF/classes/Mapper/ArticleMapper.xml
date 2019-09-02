@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.dds.mapper.ArticleMapper">
+    <select id="findArticleByCategoryId" parameterType="int" resultMap="ArticleByCategoryMap">
+        select article_id,article_title,article_author,article_time,
+        article_visits,article_comment,article_loves,article_picture,article_synopsis,label_id
+        from blog_article
+        where category_id=#{category_id}
+    </select>
+     <resultMap id="ArticleByCategoryMap" type="Article">
+         <association property="label" javaType="Label" select="cn.dds.mapper.InitHomePageMapper.selectLabel" column="label_id">
+         </association>
+     </resultMap>
+
+
+    <select id="findArticleByCatalogueId" parameterType="int" resultMap="ArticleByCatalogueMap">
+        select article_id,article_title,article_author,article_time,
+        article_visits,article_comment,article_loves,article_picture,article_synopsis,label_id
+        from blog_article
+        where catalogue_id=#{catalogue_id}
+    </select>
+    <resultMap id="ArticleByCatalogueMap" type="Article">
+        <association property="label" javaType="Label" select="cn.dds.mapper.InitHomePageMapper.selectLabel" column="label_id">
+        </association>
+    </resultMap>
+
+
+    <select id="queryArticleByLabelId" parameterType="int" resultMap="ArticleByLabelMap">
+        select article_id,article_title,article_author,article_time,
+        article_visits,article_comment,article_loves,article_picture,article_synopsis,label_id
+        from blog_article
+        where label_id=#{label_id}
+    </select>
+    <resultMap id="ArticleByLabelMap" type="Article">
+        <association property="label" javaType="Label" select="cn.dds.mapper.InitHomePageMapper.selectLabel" column="label_id">
+        </association>
+    </resultMap>
+
+    <!--通过文章归档时间查询文章-->
+    <select id="queryArticleByTime" parameterType="String" resultMap="ArticleByTimeMap">
+         select article_id,article_title,article_author,article_time,
+         article_visits,article_comment,article_loves,article_picture,article_synopsis,label_id
+         from blog_article
+         where DATE_FORMAT(article_time,'%Y-%m') = #{article_time} order by article_time DESC
+    </select>
+    <resultMap id="ArticleByTimeMap" type="Article">
+        <association property="label" javaType="Label" select="cn.dds.mapper.InitHomePageMapper.selectLabel" column="label_id">
+        </association>
+    </resultMap>
+
+
+
+    <select id="findArticleDetailsById" parameterType="int" resultMap="ArticleMessages">
+        select * from blog_article where article_id=#{article_id}
+    </select>
+    <resultMap id="ArticleMessages" type="Article">
+        <association property="category" javaType="Category" select="cn.dds.mapper.ArticleMapper.findCategory" column="category_id">
+        </association>
+        <association property="catalogue" javaType="Catalogue" select="cn.dds.mapper.ArticleMapper.findCatalogue" column="catalogue_id">
+        </association>
+    </resultMap>
+    <select id="findCategory" parameterType="int" resultType="Category">
+        select category_id,category_name
+        from blog_category
+        where category_id=#{category_id}
+    </select>
+    <select id="findCatalogue" parameterType="int" resultType="Catalogue">
+         select catalogue_id,catalogue_name
+         from blog_catalogue
+         where catalogue_id=#{catalogue_id}
+    </select>
+
+    <!--根据id查询本文章的所有评论-->
+    <select id="findArticleMainCommentById" parameterType="int" resultMap="ArticleMainCommentMap">
+        select amaincomment_id,amaincomment_content,amaincomment_time,article_id,user_id,hassubcomment
+        from blog_amaincomment
+        where article_id=#{article_id}
+    </select>
+    <resultMap id="ArticleMainCommentMap" type="ArticleMainComment">
+        <id property="amaincomment_id" column="amaincomment_id"/>
+        <association property="user" javaType="User" select="cn.dds.mapper.ArticleMapper.findUserById" column="user_id">
+        </association>
+    </resultMap>
+    <!--根据主评论id查询所有子评论-->
+    <select id="findArticleSubCommentById" parameterType="int" resultMap="ArticleSubCommentMap">
+        select asubcomment_id,asubcomment_content,asubcomment_time,respond_name,amaincomment_id,user_id,article_id
+        from blog_asubcomment
+        where amaincomment_id=#{amaincomment_id}
+    </select>
+    <resultMap id="ArticleSubCommentMap" type="ArticleSubComment">
+        <association property="user" javaType="User" select="cn.dds.mapper.ArticleMapper.findUserById" column="user_id">
+        </association>
+    </resultMap>
+    <select id="findUserById" parameterType="int" resultType="User">
+        select * from blog_user where user_id=#{user_id}
+    </select>
+     <!--查找字评论中的用户id-->
+    <select id="findDebunksFromMainComment" parameterType="int" resultType="String">
+        select user_id from blog_amaincomment where article_id = #{article_id}
+    </select>
+    <!--查找字评论中的用户id-->
+    <select id="findDebunksFromSubComment" parameterType="int" resultType="String">
+        select user_id from blog_asubcomment where article_id = #{article_id}
+    </select>
+
+
+    <!--通过文章id修改点赞数-->
+    <update id="updateArticleLoves" parameterType="int">
+        update  blog_article set article_loves=article_loves+1 where article_id=#{article_id}
+    </update>
+    <!--通过文章id修改评论数-->
+    <update id="updateArticleCommentNum" parameterType="int">
+        update  blog_article set article_comment=article_comment+1 where article_id=#{article_id}
+    </update>
+
+</mapper>

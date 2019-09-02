@@ -1,0 +1,281 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:tx="http://www.springframework.org/schema/tx"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd">
+
+
+    <!--引入db.properties，redis.properties-->
+    <!--<bean id="config" class="org.springframework.beans.factory.config.PreferencesPlaceholderConfigurer">-->
+    <bean id="config" class="org.springframework.beans.factory.config.PreferencesPlaceholderConfigurer">
+        <!--告诉db.properties，redis.properties的位置-->
+        <property name="locations">
+              <list>
+                  <value>classpath:db.properties</value>
+                  <value>classpath:redis.properties</value>
+              </list>
+        </property>
+    </bean>
+    <!--配置数据库信息（替代Mybatis的Mybatis-conf.xml配置文件）-->
+    <!--配置数据库相关信息-->
+    <bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource">
+        <property name="driverClassName" value="${mysql.driver}"/>
+        <property name="url" value="${mysql.url}"/>
+        <property name="username" value="${mysql.username}"/>
+        <property name="password" value="${mysql.password}"/>
+        <property name="maxActive" value="10"/><!--连接池最大活动时间-->
+        <property name="maxIdle" value="6"/><!--连接池最大空闲时间-->
+        <property name="validationQuery" value="select 1"/><!--检查连接是否可用-->
+    </bean>
+
+    <!--在springIOC容器中加入mybatis的核心类SqlSessionFactory-->
+    <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+
+        <!--配置数据库相关信息-->
+        <property name="dataSource" ref="dataSource"/>
+        <!--加载Mapper配置文件-->
+        <property name="mapperLocations" value="classpath:Mapper/*.xml"/>
+        <!--批量配置别名-->
+        <property name="typeAliasesPackage" value="cn.dds.entity"/>
+        <!--设置延迟加载-->
+        <property name="configuration" ref="configuration"/>
+
+        <!--配置分页插件-->
+        <property name="plugins">
+            <array>
+                <bean class="com.github.pagehelper.PageHelper"/>
+            </array>
+        </property>
+    </bean>
+    <!--设置延迟加载-->
+    <bean id="configuration" class="org.apache.ibatis.session.Configuration">
+        <property name="aggressiveLazyLoading" value="false"/>
+        <property name="lazyLoadingEnabled" value="true"/>
+    </bean>
+    <!-- 配置事务管理器-->
+    <bean id="txManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+    <!--spring增加对事务的支持txManager-->
+    <tx:annotation-driven transaction-manager="txManager"/>
+
+    <!--第三种方式批量配置 mapper实现类
+       批量产生的mapper对象在springIOC中的id值默认就是接口名(首字母小写)
+   -->
+    <bean id="mappers" class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <!--将sqlSessionFactory交给Spring管理-->
+        <property name="sqlSessionFactoryBeanName" value="sqlSessionFactory"/>
+        <!--批量配置 mapper 接口-->
+        <property name="basePackage" value="cn.dds.mapper"/>
+    </bean>
+
+
+
+
+    <!-- 配置redis相关信息-->
+    <bean id="poolConfig" class="redis.clients.jedis.JedisPoolConfig">
+        <!-- 最大连接数 -->
+        <property name="maxTotal" value="${redis.maxTotal}"/>
+        <!-- 最大空闲连接数 -->
+        <property name="maxIdle" value="${redis.maxIdle}"/>
+        <!-- 获取连接时的最大等待毫秒数,小于零:阻塞不确定的时间,默认-1 -->
+        <property name="maxWaitMillis" value="${redis.maxWait}"/>
+        <!--在获取连接时检查有效性，默认false-->
+        <property name="testOnBorrow" value="${redis.testOnBorrow}"/>
+
+    </bean>
+    <!-- 配置JedisConnectionFactory链接工厂 -->
+    <bean id="jedisConnectionFactory" class="org.springframework.data.redis.connection.jedis.JedisConnectionFactory" >
+        <!--连接名-->
+        <property name="hostName" value="${redis.host}"/>
+        <!--端口号-->
+        <property name="port" value="${redis.port}"/>
+        <property name="password" value="${redis.password}"/>
+        <property name="poolConfig" ref="poolConfig"/>
+    </bean>
+    <!-- 配置RedisTemplate -->
+    <bean id="redisTemplate" class="org.springframework.data.redis.core.RedisTemplate">
+        <property name="connectionFactory" ref="jedisConnectionFactory" />
+        <property name="keySerializer">
+                 <bean class="org.springframework.data.redis.serializer.StringRedisSerializer"/>
+        </property>
+        <property name="valueSerializer">
+                <bean class="org.springframework.data.redis.serializer.StringRedisSerializer"/>
+        </property>
+    </bean>
+
+    <!--配置文件上传CommonsMultipartResolver 将其加入SpringIOC容器-->
+    <!--下一个标签中的id值固定 原因：springIoc容器在初始化是会自动寻找一个id="multipartResolver"的bean-->
+    <bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+        <property name="defaultEncoding" value="UTF-8"/>
+        <!-- 上传单个文件的最大值，单位Byte;如果-1，表示无限制 (这里限制为10MB) -->
+        <property name="maxUploadSize"  value="10240000"/>
+    </bean>
+
+
+    <bean id="articleMainComment" class="cn.dds.entity.ArticleMainComment"/>
+    <bean id="articleSubComment" class="cn.dds.entity.ArticleSubComment"/>
+
+
+
+
+
+
+     <!--映射表情Map-->
+    <bean id="smiliesMap" class="cn.dds.entity.SmiliesMap">
+        <property name="smiliesMap">
+            <map>
+                <entry>
+                    <key>
+                        <value>mrgreen</value>
+                    </key>
+                    <value>static/images/smilies/icon_mrgreen.gif"&gt;</value>
+                </entry>
+                <entry>
+                    <key>
+                        <value>razz</value>
+                    </key>
+                    <value>static/images/smilies/icon_razz.gif"&gt;</value>
+                </entry>
+                <entry>
+                    <key>
+                        <value>sad</value>
+                    </key>
+                    <value>static/images/smilies/icon_sad.gif"&gt;</value>
+                </entry>
+                <entry>
+                    <key>
+                        <value>smile</value>
+                    </key>
+                    <value>static/images/smilies/icon_smile.gif"&gt;</value>
+                </entry>
+                <entry>
+                    <key>
+                        <value>oops</value>
+                    </key>
+                    <value>static/images/smilies/icon_redface.gif"&gt;</value>
+                </entry>
+                <entry>
+                    <key>
+                        <value>grin</value>
+                    </key>
+                    <value>static/images/smilies/icon_biggrin.gif"&gt;</value>
+                </entry>
+                <entry>
+                    <key>
+                        <value>eek</value>
+                    </key>
+                    <value>static/images/smilies/icon_surprised.gif"&gt;</value>
+                </entry>
+                <entry>
+                    <key>
+                        <value>???</value>
+                    </key>
+                    <value>static/images/smilies/icon_confused.gif"&gt;</value>
+                </entry>
+                <entry>
+                    <key>
+                        <value>cool</value>
+                    </key>
+                    <value>static/images/smilies/icon_cool.gif"&gt;</value>
+                </entry>
+                <entry>
+                    <key>
+                        <value>lol</value>
+                    </key>
+                    <value>static/images/smilies/icon_lol.gif"&gt;</value>
+                </entry>
+                <entry>
+                    <key>
+                        <value>mad</value>
+                    </key>
+                    <value>static/images/smilies/icon_mad.gif"&gt;</value>
+                </entry>
+                <entry>
+                    <key>
+                        <value>twisted</value>
+                    </key>
+                    <value>static/images/smilies/icon_twisted.gif"&gt;</value>
+                </entry>
+                <entry>
+                    <key>
+                        <value>roll</value>
+                    </key>
+                    <value>static/images/smilies/icon_rolleyes.gif"&gt;</value>
+                </entry>
+                <entry>
+                    <key>
+                        <value>wink</value>
+                    </key>
+                    <value>static/images/smilies/icon_wink.gif"&gt;</value>
+                </entry>
+                <entry>
+                    <key>
+                        <value>idea</value>
+                    </key>
+                    <value>static/images/smilies/icon_idea.gif"&gt;</value>
+                </entry>
+                <entry>
+                    <key>
+                        <value>arrow</value>
+                    </key>
+                    <value>static/images/smilies/icon_arrow.gif"&gt;</value>
+                </entry>
+                <entry>
+                    <key>
+                        <value>neutral</value>
+                    </key>
+                    <value>static/images/smilies/icon_neutral.gif"&gt;</value>
+                </entry>
+                <entry>
+                    <key>
+                        <value>cry</value>
+                    </key>
+                    <value>static/images/smilies/icon_cry.gif"&gt;</value>
+                </entry>
+                <entry>
+                    <key>
+                        <value>?</value>
+                    </key>
+                    <value>static/images/smilies/icon_question.gif"&gt;</value>
+                </entry>
+                <entry>
+                    <key>
+                        <value>evil</value>
+                    </key>
+                    <value>static/images/smilies/icon_evil.gif"&gt;</value>
+                </entry>
+                <entry>
+                    <key>
+                        <value>shock</value>
+                    </key>
+                    <value>static/images/smilies/icon_eek.gif"&gt;</value>
+                </entry>
+                <entry>
+                    <key>
+                        <value>!</value>
+                    </key>
+                    <value>static/images/smilies/icon_exclaim.gif"&gt;</value>
+                </entry>
+            </map>
+        </property>
+    </bean>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</beans>

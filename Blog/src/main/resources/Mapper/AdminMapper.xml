@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.dds.mapper.AdminMapper">
+     <select id="selectCategory" resultType="Category">
+         select  * from blog_category
+     </select>
+
+    <select id="selectLabel" resultType="Label">
+        select * from blog_label
+    </select>
+
+    <select id="selectCatalogueByCategoryId" parameterType="int" resultType="Catalogue">
+        select * from blog_catalogue where category_id=#{category_id}
+    </select>
+
+    <insert id="insertArticle" parameterType="article">
+        insert into
+        blog_article(article_title,article_author,article_time,article_visits,article_comment,article_loves,article_content,article_picture,article_synopsis,label_id,category_id,catalogue_id)
+        values (#{article_title},#{article_author},#{article_time},#{article_visits},#{article_comment},#{article_loves},#{article_content},#{article_picture},#{article_synopsis},#{label.label_id},#{category.category_id},#{catalogue.catalogue_id})
+    </insert>
+</mapper>
